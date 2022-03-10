@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 echo $BASH_VERSION
 
+if [[ -z "${AWS_ACCESS_ID}" ]]; then
+    printf '%s\n' "Missing AWS_ACCESS_ID environment variable, could not configure AWS CLI." >&2
+    exit 1
+fi
+if [[ -z "${AWS_SECRET_KEY}" ]]; then
+    printf '%s\n' "Missing AWS_SECRET_KEY environment variable, could not configure AWS CLI." >&2
+    exit 1
+fi
+aws configure set aws_access_key_id $AWS_ACCESS_ID
+aws configure set aws_secret_access_key $AWS_SECRET_KEY
+aws configure set default.region us-east-1
+
 # defaults
 DEPLOY=0
 BUILD_TILESETS=0
