@@ -27,7 +27,12 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | b
 RUN source /root/.bashrc && nvm install 16 && npm i -g mapshaper && npm install
 SHELL ["/bin/bash", "--login", "-c"]
 
-# Create a directory and copy in all files
+# Install rust, cargo, and xsv
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN /bin/bash -c "source $HOME/.cargo/env \
+  && cargo install xsv"
+
+# Clone tippecanoe source to temporary directory
 WORKDIR /
 RUN mkdir -p /tmp/tippecanoe-src
 RUN git clone -b 1.36.0 https://github.com/mapbox/tippecanoe.git /tmp/tippecanoe-src
@@ -42,8 +47,8 @@ RUN git checkout -b master && \
 WORKDIR /
 RUN rm -rf /tmp/tippecanoe-src
 
-# Install mapshaper
-# RUN npm install -g mapshaper
+# Add cargo to path
+ENV PATH="/root/.cargo/bin:$PATH"
 
 WORKDIR /etl-src
 
