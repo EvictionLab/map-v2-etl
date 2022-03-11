@@ -47,7 +47,7 @@ docker build -t eviction-lab-etl .
 once the dockerfile is finished building, run it with:
 
 ```
-docker run -it --env-file .env.local el-etl2
+docker run -it --env-file .env.local eviction-lab-etl
 ```
 
 this will put you in a command line shell where you can run the `./build.sh` script with your preferred options (outlined below)
