@@ -4,5 +4,5 @@ node_modules
 source
 *.mbtiles
 *.csv
-.env.local
+.env.*
 build

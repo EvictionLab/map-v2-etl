@@ -7,48 +7,16 @@
 const fs = require("fs");
 const Papa = require("papaparse");
 const d3 = require("d3");
+const colMapJson = require(`../assets/column-map-${process.env.DATA_INPUT_TYPE}.json`);
 
-// row identifier column name
-const ROW_ID = "GEOID";
+// row identifier column name (raw is "GEOID", modelled is "id")
+const ROW_ID = process.env.DATA_INPUT_TYPE === "modelled" ? "id" : "GEOID";
 
 // map of input column names to output column names
-const COL_MAP = {
-  GEOID: "GEOID",
-  name: "n",
-  "parent-location": "pl",
-  population: "p",
-  "pct-renter-occupied": "pro",
-  "median-gross-rent": "mgr",
-  "median-household-income": "mhi",
-  "median-property-value": "mpv",
-  "rent-burden": "rb",
-  "pct-white": "pw",
-  "pct-af-am": "paa",
-  "pct-hispanic": "ph",
-  "pct-am-ind": "pai",
-  "pct-asian": "pa",
-  "pct-nh-pi": "pnp",
-  "pct-multiple": "pm",
-  "pct-other": "po",
-  evictions: "e",
-  "eviction-filings": "ef",
-  "renter-occupied-households": "roh",
-  "poverty-rate": "pr",
-  "eviction-rate": "er",
-  "eviction-filing-rate": "efr",
-  "low-flag": "lf",
-  "eviction-rate-high": "erh",
-  "eviction-rate-low": "erl",
-  "evictions-high": "eh",
-  "evictions-low": "el",
-  "eviction-filings-high": "efh",
-  "eviction-filings-low": "efl",
-  "eviction-filing-rate-high": "efrh",
-  "eviction-filing-rate-low": "efrl",
-};
+const COL_MAP = colMapJson;
 
 // columns that do not change by year
-const NO_YEAR_COLS = ["GEOID", "name", "parent-location"];
+const NO_YEAR_COLS = ["id", "name", "parent_location"];
 
 // time interval to provide updates
 const INTERVAL = 10;
@@ -124,7 +92,7 @@ fs.createReadStream(filename, { encoding: "utf8" })
     const id = data[ROW_ID];
     const row = parser(data);
     // create the entry for the GEOID if it doesn't exist
-    if (!result[id]) result[id] = { [ROW_ID]: id };
+    if (!result[id]) result[id] = { GEOID: id };
     // extent the GEOID entry with the row values
     result[id] = { ...result[id], ...row };
   })

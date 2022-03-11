@@ -33,7 +33,7 @@ REGIONS=(states counties cities tracts block-groups)
 # each tileset contains 10 years of data
 declare -A YEARS
 YEARS[0]="00;01;02;03;04;05;06;07;08;09"
-YEARS[1]="10;11;12;13;14;15;16;17;18;19"
+YEARS[1]="10;11;12;13;14;15;16;17;18"
 
 # process command line args
 while getopts 'edtr:h' opt; do
@@ -44,16 +44,13 @@ while getopts 'edtr:h' opt; do
     d)
       DEPLOY=1
       ;;
-
     t)
       BUILD_TILESETS=1
       ;;
-
     r)
       arg="$OPTARG"
       REGIONS=($arg)
       ;;
-
     ?|h)
       echo "Usage: $(basename $0) [-t] [-d] [-r region]"
       echo "  -t: build tilesets"
@@ -95,7 +92,7 @@ for REGION in ${REGIONS[@]}; do
     echo "uploading static data to S3..."
     # deploy extents if they were built
     if [ $BUILD_EXTENTS = 1 ]; then
-      aws s3 cp ./_proc/$REGION/data.extents.csv s3://$DATA_OUTPUT/$REGION-extents.csv
+      aws s3 cp ./_proc/$REGION/data.extents.csv s3://$EXTENTS_OUTPUT/$REGION-extents.csv
     fi
     aws s3 cp ./_proc/$REGION/data.wide.csv s3://$DATA_OUTPUT/$REGION.csv
   fi
@@ -207,7 +204,7 @@ for REGION in ${REGIONS[@]}; do
       if [ $DEPLOY = 1 ]; then
         echo "preparing .mbtiles for deploy to S3"
         OUTPUT_DIR=./_proc/$REGION/$REGION-${DECADE:0:2}
-        tile-join --output-to-directory=$OUTPUT_DIR ./build/$REGION-${DECADE:0:2}.mbtiles
+        tile-join --no-tile-size-limit --output-to-directory=$OUTPUT_DIR ./build/$REGION-${DECADE:0:2}.mbtiles
         echo "deploying tileset to S3"
         aws s3 cp $OUTPUT_DIR s3://$TILESET_OUTPUT/$REGION-${DECADE:0:2}/ --recursive \
             --content-type application/x-protobuf \
