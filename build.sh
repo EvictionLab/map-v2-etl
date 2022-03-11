@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 echo $BASH_VERSION
 
+# load env vars
+ENV_FILE=.env.local
+if [ -f "$ENV_FILE" ]; then
+    echo "loading environment vars from $ENV_FILE"
+    export $(echo $(cat $ENV_FILE | sed 's/#.*//g' | sed 's/\r//g' | xargs) | envsubst)
+fi
+
+# configure aws cli
 if [[ -z "${AWS_ACCESS_ID}" ]]; then
     printf '%s\n' "Missing AWS_ACCESS_ID environment variable, could not configure AWS CLI." >&2
     exit 1
@@ -13,7 +21,7 @@ aws configure set aws_access_key_id $AWS_ACCESS_ID
 aws configure set aws_secret_access_key $AWS_SECRET_KEY
 aws configure set default.region us-east-1
 
-# defaults
+# defaults for command line args
 DEPLOY=0
 BUILD_TILESETS=0
 BUILD_EXTENTS=0
@@ -26,7 +34,6 @@ REGIONS=(states counties cities tracts block-groups)
 declare -A YEARS
 YEARS[0]="00;01;02;03;04;05;06;07;08;09"
 YEARS[1]="10;11;12;13;14;15;16;17;18;19"
-
 
 # process command line args
 while getopts 'edtr:h' opt; do
@@ -58,9 +65,6 @@ while getopts 'edtr:h' opt; do
   esac
 done
 shift "$(($OPTIND -1))"
-
-# load env vars
-export $(echo $(cat .env | sed 's/#.*//g' | sed 's/\r//g' | xargs) | envsubst)
 
 # setup processing folders
 rm -rf _proc
