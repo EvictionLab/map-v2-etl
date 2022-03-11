@@ -9,36 +9,52 @@ This pipeline loads Eviction Lab map 2.0 data and performs the following actions
 - generates vector tilesets for choropleth and bubble layers for each region
   - to keep data sizes within limits, each tileset contains 10 years of data.  e.g. block-groups-00.mbtiles will contain data for 2000-2009, and block-groups-10.mbtiles will contain data for 2010-2019.
 
-## Requirements
-
-- aws-cli
-- tippecanoe
-- nodejs
-- csvkit
-- bash 4+
-- 8+GB of RAM (for processing block groups data)
-
-> TODO: create a docker container with the above requirements installed
-
 ## Getting Started
+
+
+### Install requirements
+
+> Note: you can use the docker container to run the ETL pipeline instead of installing the requirements locally.
 
 1. install [aws-cli](https://aws.amazon.com/cli/) and configure with credentials that have access to the eviction lab S3 buckets.
 2. install [tippecanoe](https://github.com/mapbox/tippecanoe)
 3. install [csvkit](https://csvkit.readthedocs.io/en/latest/tutorial/1_getting_started.html#installing-csvkit)
-4. install node dependencies with `npm install`
-5. configure your `.env` file with configuration for the input and output S3 buckets:
+4. install [mapshaper](https://github.com/mbloch/mapshaper)
+5. install node dependencies with `npm install`
 
+### Configure environment vars
+
+copy `.env` to `.env.local` and add configuration for AWS CLI, S3 input bucket, and S3 output buckets.
+
+**defaults:**
 ```
+AWS_ACCESS_ID=
+AWS_SECRET_KEY=
 DATA_INPUT="eviction-lab-etl-data/2018-12-14"
 GEOJSON_INPUT="eviction-lab-etl-data/census"
 TILESET_OUTPUT="eviction-lab-tilesets/2022-03"
 DATA_OUTPUT="eviction-lab-etl-data/2022-03"
 ```
 
+## Using Docker
+
+Clone the repository then build the docker image with:
+
+```
+docker build -t eviction-lab-etl .
+```
+
+once the dockerfile is finished building, run it with:
+
+```
+docker run -it --env-file .env.local el-etl2
+```
+
+this will put you in a command line shell where you can run the `./build.sh` script with your preferred options (outlined below)
 
 ## Building the tilesets + data
 
-> **Warning:** if you are deploying, ensure the`DATA_OUTPUT` and `TILESET_OUTPUT` in .env will not overwrite the version currently used in production.
+> **Warning:** if you are deploying, ensure the`DATA_OUTPUT` and `TILESET_OUTPUT` in .env.local will not overwrite the version currently used in production.
 
 Use the `build.sh` script to build tilesets and static data.
 
