@@ -105,6 +105,60 @@ for REGION in ${REGIONS[@]}; do
     aws s3 cp s3://$GEOJSON_INPUT/$REGION.geojson.gz ./_proc/$REGION/shapes.geojson.gz
     gunzip -f _proc/$REGION/shapes.geojson.gz
 
+    # create base bubble centers from the GeoJSON +
+    # pipe the GeoJSON to the `tippecanoe-json-tool` to format it for use with tippecanoe
+    echo "Creating bubble GeoJSON for $REGION..."
+    node  --max-old-space-size=8192 `which mapshaper` ./_proc/$REGION/shapes.geojson \
+      -filter-fields GEOID \
+      -each "id = Number(GEOID)" \
+      -points inner \
+      -o - format=geojson | \
+      tippecanoe-json-tool --extract=GEOID \
+        --empty-csv-columns-are-null | \
+        LC_ALL=C sort > ./_proc/$REGION/centers.geojson
+
+    # tippecanoe options for bubble layers
+    declare -A BUBBLE_OPTS
+    BUBBLE_OPTS[states]="--maximum-zoom=6 --base-zoom=1"
+    BUBBLE_OPTS[counties]="--maximum-zoom=7 --base-zoom=2"
+    BUBBLE_OPTS[cities]="--maximum-zoom=8 --base-zoom=6 --drop-densest-as-needed --extend-zooms-if-still-dropping"
+    BUBBLE_OPTS[tracts]="--maximum-zoom=10 --base-zoom=7 --drop-densest-as-needed --extend-zooms-if-still-dropping"
+    BUBBLE_OPTS[block-groups]="--maximum-zoom=10 --base-zoom=8 --drop-densest-as-needed --extend-zooms-if-still-dropping"
+
+    echo "Generating bubble tileset..."
+    tippecanoe -o ./_proc/$REGION/$REGION-centers.mbtiles -f \
+      -L $REGION-centers:./_proc/$REGION/centers.geojson \
+      --read-parallel ${BUBBLE_OPTS[$REGION]} \
+      --attribute-type=GEOID:string \
+      --use-attribute-for-id=id \
+      --empty-csv-columns-are-null
+
+    # create base choropleth tileset w/o data +
+    # pipe to `tippecanoe-json-tool` to format the JSON for use with tippecanoe
+    echo "Creating choropleth GeoJSON for $REGION..."
+    node  --max-old-space-size=8192 `which mapshaper` ./_proc/$REGION/shapes.geojson \
+      -each "id = Number(GEOID)" \
+      -o - format=geojson | \
+      tippecanoe-json-tool --extract=GEOID \
+        --empty-csv-columns-are-null | \
+        LC_ALL=C sort > ./_proc/$REGION/choropleth.geojson
+
+    # tippecanoe options for choropleth layers
+    declare -A CHOROPLETH_OPTS
+    CHOROPLETH_OPTS[states]="--maximum-zoom=6 --simplification=50 --detect-shared-borders"
+    CHOROPLETH_OPTS[counties]="--maximum-zoom=7 --minimum-zoom=1 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
+    CHOROPLETH_OPTS[cities]="--maximum-zoom=8 --minimum-zoom=2 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
+    CHOROPLETH_OPTS[tracts]="--maximum-zoom=10 --minimum-zoom=7 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
+    CHOROPLETH_OPTS[block-groups]="--maximum-zoom=10 --minimum-zoom=8 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
+
+    echo "Generating chorpleth tileset... ${CHOROPLETH_OPTS[$REGION]}"
+    tippecanoe -o ./_proc/$REGION/$REGION-choropleth.mbtiles -f \
+      -L $REGION:./_proc/$REGION/choropleth.geojson \
+      --read-parallel ${CHOROPLETH_OPTS[$REGION]} \
+      --attribute-type=GEOID:string \
+      --use-attribute-for-id=id \
+      --empty-csv-columns-are-null
+    
     # build tilesets by decade
     for DECADE in "${YEARS[@]}"
     do
@@ -117,7 +171,7 @@ for REGION in ${REGIONS[@]}; do
       # TODO: allow different vars for RAW and MODELLED
       # BUBBLE_VARS=("er" "efr")
       BUBBLE_VARS=("tr" "efr")
-      BUBBLE_FIELDS="n,pl,"
+      BUBBLE_FIELDS="GEOID,n,pl,"
       for varname in "${BUBBLE_VARS[@]}"
       do
         for suffix in "${YEAR_GROUP[@]}"
@@ -126,41 +180,15 @@ for REGION in ${REGIONS[@]}; do
         done
       done
 
-      # create metge the bubble fields from the CSV into the GeoJSON +
-      # pipe the GeoJSON to the `tippecanoe-json-tool` to format it for use with tippecanoe
-      echo "Creating bubble GeoJSON for $REGION..."
-      node  --max-old-space-size=8192 `which mapshaper` ./_proc/$REGION/shapes.geojson \
-        -filter-fields GEOID \
-        -each "id = Number(GEOID)" \
-        -join ./_proc/$REGION/data.wide.csv keys=GEOID,GEOID string-fields=GEOID fields=${BUBBLE_FIELDS%?} \
-        -points inner \
-        -o - format=geojson | \
-        tippecanoe-json-tool --extract=GEOID \
-          --empty-csv-columns-are-null | \
-          LC_ALL=C sort > ./_proc/$REGION/centers.data.geojson
-
-      # tippecanoe options for bubble layers
-      declare -A BUBBLE_OPTS
-      BUBBLE_OPTS[states]="--maximum-zoom=6 --base-zoom=1"
-      BUBBLE_OPTS[counties]="--maximum-zoom=7 --base-zoom=2"
-      BUBBLE_OPTS[cities]="--maximum-zoom=8 --base-zoom=6 --drop-densest-as-needed --extend-zooms-if-still-dropping"
-      BUBBLE_OPTS[tracts]="--maximum-zoom=12 --base-zoom=7 --drop-densest-as-needed --extend-zooms-if-still-dropping"
-      BUBBLE_OPTS[block-groups]="--maximum-zoom=12 --base-zoom=8 --drop-densest-as-needed --extend-zooms-if-still-dropping"
-
-      echo "Generating bubble tileset..."
-      tippecanoe -o ./_proc/$REGION/$REGION-centers.mbtiles -f \
-        -L $REGION-centers:./_proc/$REGION/centers.data.geojson \
-        --read-parallel ${BUBBLE_OPTS[$REGION]} \
-        --attribute-type=GEOID:string \
-        --use-attribute-for-id=id \
-        --empty-csv-columns-are-null
+      # join the choropleth data to the choropleth shapes tileset
+      csvcut -c ${BUBBLE_FIELDS%?} ./_proc/$REGION/data.wide.csv > ./_proc/$REGION/bubble-data-${DECADE:0:2}.wide.csv
+      tile-join -l $REGION-centers --if-matched --no-tile-size-limit --force --no-tile-stats --empty-csv-columns-are-null -o ./_proc/$REGION/$REGION-centers-data-${DECADE:0:2}.mbtiles -c ./_proc/$REGION/bubble-data-${DECADE:0:2}.wide.csv ./_proc/$REGION/$REGION-centers.mbtiles
 
       # create a comma separated list of variable names to load in the choropleth tileset
-     
       # TODO: adjust based on RAW or MODELLED
       # CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "e" "ef" "er" "efr" "lf")
       CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "t" "tl" "th" "tr" "trl" "trh" "ef" "efl" "efh" "efr" "efrl" "efrh")
-      CHOROPLETH_FIELDS="n,pl,"
+      CHOROPLETH_FIELDS="GEOID,n,pl,"
       for varname in "${CHOROPLETH_VARS[@]}"
       do
         for suffix in "${YEAR_GROUP[@]}"
@@ -169,42 +197,15 @@ for REGION in ${REGIONS[@]}; do
         done
       done
 
-      # merge the CSV data into the GeoJSON for the region +
-      # pipe to `tippecanoe-json-tool` to format the JSON for use with tippecanoe
-      echo "Creating choropleth GeoJSON for $REGION..."
-      node  --max-old-space-size=8192 `which mapshaper` ./_proc/$REGION/shapes.geojson \
-        -filter-fields GEOID \
-        -each "id = Number(GEOID)" \
-        -join ./_proc/$REGION/data.wide.csv keys=GEOID,GEOID string-fields=GEOID fields=${CHOROPLETH_FIELDS%?} \
-        -o - format=geojson | \
-        tippecanoe-json-tool --extract=GEOID \
-          --empty-csv-columns-are-null | \
-          LC_ALL=C sort > ./_proc/$REGION/choropleth.data.geojson
-
-      # tippecanoe options for choropleth layers
-      declare -A CHOROPLETH_OPTS
-      CHOROPLETH_OPTS[states]="--maximum-zoom=6 --simplification=10 --simplify-only-low-zooms --detect-shared-borders"
-      CHOROPLETH_OPTS[counties]="--maximum-zoom=7 --minimum-zoom=1 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --simplify-only-low-zooms --detect-shared-borders"
-      CHOROPLETH_OPTS[cities]="--maximum-zoom=8 --minimum-zoom=2 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --simplify-only-low-zooms --detect-shared-borders"
-      CHOROPLETH_OPTS[tracts]="--maximum-zoom=12 --minimum-zoom=7 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --simplify-only-low-zooms --detect-shared-borders"
-      CHOROPLETH_OPTS[block-groups]="--maximum-zoom=12 --minimum-zoom=8 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --simplify-only-low-zooms --detect-shared-borders"
-
-      echo "Generating chorpleth tileset... ${CHOROPLETH_OPTS[$REGION]}"
-      tippecanoe -o ./_proc/$REGION/$REGION-choropleth.mbtiles -f \
-        -L $REGION:./_proc/$REGION/choropleth.data.geojson \
-        --read-parallel ${CHOROPLETH_OPTS[$REGION]} \
-        --attribute-type=GEOID:string \
-        --use-attribute-for-id=id \
-        --empty-csv-columns-are-null \
-        --no-tile-size-limit
+      # join the choropleth data to the choropleth shapes tileset
+      csvcut -c ${CHOROPLETH_FIELDS%?} ./_proc/$REGION/data.wide.csv > ./_proc/$REGION/choropleth-data-${DECADE:0:2}.wide.csv
+      tile-join -l $REGION --if-matched --no-tile-size-limit --force --no-tile-stats --empty-csv-columns-are-null -o ./_proc/$REGION/$REGION-choropleth-data-${DECADE:0:2}.mbtiles -c ./_proc/$REGION/choropleth-data-${DECADE:0:2}.wide.csv ./_proc/$REGION/$REGION-choropleth.mbtiles
 
       # join the choropleth and bubble tilesets and put them in the build folder
       echo "Joining $REGION bubble and choropleth tilesets... "
-      tile-join --no-tile-size-limit --force -o ./build/$REGION-${DECADE:0:2}.mbtiles ./_proc/$REGION/$REGION-choropleth.mbtiles ./_proc/$REGION/$REGION-centers.mbtiles
+      tile-join --no-tile-size-limit --force -o ./build/$REGION-${DECADE:0:2}.mbtiles ./_proc/$REGION/$REGION-choropleth-data-${DECADE:0:2}.mbtiles ./_proc/$REGION/$REGION-centers-data-${DECADE:0:2}.mbtiles
       
-      # clean up temporary files
-      rm ./_proc/$REGION/*.mbtiles
-      rm ./_proc/$REGION/*.data.geojson
+
 
       # output tileset to directory then copy to S3
       if [ $DEPLOY = 1 ]; then
@@ -224,6 +225,9 @@ for REGION in ${REGIONS[@]}; do
     done # end DECADE loop
 
   fi # end $BUILT_TILESETS = 1 (-t option)
+
+  # clean up temporary files
+  rm -rf ./_proc/$REGION
 
 done # end REGION loop
 
