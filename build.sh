@@ -114,7 +114,9 @@ for REGION in ${REGIONS[@]}; do
       echo "Starting tileset build for $REGION for ${YEAR_GROUP[0]}-${YEAR_GROUP[-1]}..."
 
       # create a comma separated list of variable names to load in the bubble tileset
-      BUBBLE_VARS=("er" "efr")
+      # TODO: allow different vars for RAW and MODELLED
+      # BUBBLE_VARS=("er" "efr")
+      BUBBLE_VARS=("tr" "efr")
       BUBBLE_FIELDS="n,pl,"
       for varname in "${BUBBLE_VARS[@]}"
       do
@@ -154,7 +156,10 @@ for REGION in ${REGIONS[@]}; do
         --empty-csv-columns-are-null
 
       # create a comma separated list of variable names to load in the choropleth tileset
-      CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "e" "ef" "er" "efr" "lf")
+     
+      # TODO: adjust based on RAW or MODELLED
+      # CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "e" "ef" "er" "efr" "lf")
+      CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "t" "tl" "th" "tr" "trl" "trh" "ef" "efl" "efh" "efr" "efrl" "efrh")
       CHOROPLETH_FIELDS="n,pl,"
       for varname in "${CHOROPLETH_VARS[@]}"
       do
@@ -190,7 +195,8 @@ for REGION in ${REGIONS[@]}; do
         --read-parallel ${CHOROPLETH_OPTS[$REGION]} \
         --attribute-type=GEOID:string \
         --use-attribute-for-id=id \
-        --empty-csv-columns-are-null
+        --empty-csv-columns-are-null \
+        --no-tile-size-limit
 
       # join the choropleth and bubble tilesets and put them in the build folder
       echo "Joining $REGION bubble and choropleth tilesets... "
