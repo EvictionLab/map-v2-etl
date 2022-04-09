@@ -10,7 +10,7 @@ const d3 = require("d3");
 const colMapJson = require(`../assets/column-map-${process.env.DATA_INPUT_TYPE}.json`);
 
 // row identifier column name (raw is "GEOID", modelled is "id")
-const ROW_ID = process.env.DATA_INPUT_TYPE === "modelled" ? "id" : "GEOID";
+const ROW_ID = process.env.DATA_INPUT_TYPE === "modeled" ? "id" : "GEOID";
 
 // map of input column names to output column names
 const COL_MAP = colMapJson;

@@ -33,7 +33,8 @@ REGIONS=(states counties cities tracts block-groups)
 # each tileset contains 10 years of data
 declare -A YEARS
 YEARS[0]="00;01;02;03;04;05;06;07;08;09"
-YEARS[1]="10;11;12;13;14;15;16;17;18"
+YEARS[1]="10;11;12;13;14;15;16"
+# YEARS[1]="10;11;12;13;14;15;16;17;18"
 
 # process command line args
 while getopts 'edtr:h' opt; do
@@ -145,9 +146,9 @@ for REGION in ${REGIONS[@]}; do
 
     # tippecanoe options for choropleth layers
     declare -A CHOROPLETH_OPTS
-    CHOROPLETH_OPTS[states]="--maximum-zoom=6 --simplification=50 --detect-shared-borders"
+    CHOROPLETH_OPTS[states]="--maximum-zoom=6 --simplification=10 --detect-shared-borders"
     CHOROPLETH_OPTS[counties]="--maximum-zoom=7 --minimum-zoom=1 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
-    CHOROPLETH_OPTS[cities]="--maximum-zoom=8 --minimum-zoom=2 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
+    CHOROPLETH_OPTS[cities]="--maximum-zoom=8 --minimum-zoom=2 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --detect-shared-borders"
     CHOROPLETH_OPTS[tracts]="--maximum-zoom=10 --minimum-zoom=7 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
     CHOROPLETH_OPTS[block-groups]="--maximum-zoom=10 --minimum-zoom=8 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=50 --detect-shared-borders"
 
@@ -168,9 +169,12 @@ for REGION in ${REGIONS[@]}; do
       echo "Starting tileset build for $REGION for ${YEAR_GROUP[0]}-${YEAR_GROUP[-1]}..."
 
       # create a comma separated list of variable names to load in the bubble tileset
-      # TODO: allow different vars for RAW and MODELLED
-      # BUBBLE_VARS=("er" "efr")
-      BUBBLE_VARS=("tr" "efr")
+      # TODO: allow different vars for RAW and MODELED
+      if  [ $DATA_INPUT_TYPE = "raw" ]; then
+        BUBBLE_VARS=("er" "efr")
+      else
+        BUBBLE_VARS=("tr" "efr")
+      fi
       BUBBLE_FIELDS="GEOID,n,pl,"
       for varname in "${BUBBLE_VARS[@]}"
       do
@@ -180,14 +184,18 @@ for REGION in ${REGIONS[@]}; do
         done
       done
 
+      echo "Creating bubble tileset... ${BUBBLE_FIELDS%?}"
       # join the choropleth data to the choropleth shapes tileset
       csvcut -c ${BUBBLE_FIELDS%?} ./_proc/$REGION/data.wide.csv > ./_proc/$REGION/bubble-data-${DECADE:0:2}.wide.csv
       tile-join -l $REGION-centers --if-matched --no-tile-size-limit --force --no-tile-stats --empty-csv-columns-are-null -o ./_proc/$REGION/$REGION-centers-data-${DECADE:0:2}.mbtiles -c ./_proc/$REGION/bubble-data-${DECADE:0:2}.wide.csv ./_proc/$REGION/$REGION-centers.mbtiles
 
       # create a comma separated list of variable names to load in the choropleth tileset
-      # TODO: adjust based on RAW or MODELLED
-      # CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "e" "ef" "er" "efr" "lf")
-      CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "t" "tl" "th" "tr" "trl" "trh" "ef" "efl" "efh" "efr" "efrl" "efrh")
+      # TODO: adjust based on RAW or MODELED
+      if  [ $DATA_INPUT_TYPE = "raw" ]; then
+        CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "e" "ef" "er" "efr" "lf")
+      else
+        CHOROPLETH_VARS=("p" "pr" "pro" "mgr" "mhi" "mpv" "rb" "pw" "paa" "ph" "pai" "pa" "pnp" "pm" "po" "t" "tl" "th" "tr" "trl" "trh" "ef" "efl" "efh" "efr" "efrl" "efrh")
+      fi
       CHOROPLETH_FIELDS="GEOID,n,pl,"
       for varname in "${CHOROPLETH_VARS[@]}"
       do
@@ -197,6 +205,7 @@ for REGION in ${REGIONS[@]}; do
         done
       done
 
+      echo "Creating choropleth tileset... ${CHOROPLETH_FIELDS%?}"
       # join the choropleth data to the choropleth shapes tileset
       csvcut -c ${CHOROPLETH_FIELDS%?} ./_proc/$REGION/data.wide.csv > ./_proc/$REGION/choropleth-data-${DECADE:0:2}.wide.csv
       tile-join -l $REGION --if-matched --no-tile-size-limit --force --no-tile-stats --empty-csv-columns-are-null -o ./_proc/$REGION/$REGION-choropleth-data-${DECADE:0:2}.mbtiles -c ./_proc/$REGION/choropleth-data-${DECADE:0:2}.wide.csv ./_proc/$REGION/$REGION-choropleth.mbtiles
@@ -227,7 +236,7 @@ for REGION in ${REGIONS[@]}; do
   fi # end $BUILT_TILESETS = 1 (-t option)
 
   # clean up temporary files
-  rm -rf ./_proc/$REGION
+  # rm -rf ./_proc/$REGION
 
 done # end REGION loop
 
