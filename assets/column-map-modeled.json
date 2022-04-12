@@ -29,6 +29,6 @@
   "filings_high": "efh",
   "filings_low": "efl",
   "filing_rate": "efr",
-  "filing_rate_low": "efrh",
-  "filing_rate_high": "efrl"
+  "filing_rate_low": "efrl",
+  "filing_rate_high": "efrh"
 }

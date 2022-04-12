@@ -53,7 +53,7 @@ while getopts 'edtr:h' opt; do
       REGIONS=($arg)
       ;;
     ?|h)
-      echo "Usage: $(basename $0) [-t] [-d] [-r region]"
+      echo "Usage: $(basename $0) [-e] [-t] [-d] [-r region]"
       echo "  -t: build tilesets"
       echo "  -e: build extents (min / max for each variable)"
       echo "  -d: deploy data and tilesets to S3 endpoint"
@@ -213,8 +213,6 @@ for REGION in ${REGIONS[@]}; do
       # join the choropleth and bubble tilesets and put them in the build folder
       echo "Joining $REGION bubble and choropleth tilesets... "
       tile-join --no-tile-size-limit --force -o ./build/$REGION-${DECADE:0:2}.mbtiles ./_proc/$REGION/$REGION-choropleth-data-${DECADE:0:2}.mbtiles ./_proc/$REGION/$REGION-centers-data-${DECADE:0:2}.mbtiles
-      
-
 
       # output tileset to directory then copy to S3
       if [ $DEPLOY = 1 ]; then

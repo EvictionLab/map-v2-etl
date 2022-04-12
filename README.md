@@ -7,10 +7,9 @@ This pipeline loads Eviction Lab map 2.0 data and performs the following actions
 - extracts the extents for each data metrics by year (as well as the bottom 1% and top 1% values to eliminate outliers)
   - this data is used to determine the scales for each metric
 - generates vector tilesets for choropleth and bubble layers for each region
-  - to keep data sizes within limits, each tileset contains 10 years of data.  e.g. block-groups-00.mbtiles will contain data for 2000-2009, and block-groups-10.mbtiles will contain data for 2010-2019.
+  - to keep data sizes within limits, each tileset contains 10 years of data. e.g. block-groups-00.mbtiles will contain data for 2000-2009, and block-groups-10.mbtiles will contain data for 2010-2019.
 
 ## Getting Started
-
 
 ### Install requirements
 
@@ -27,6 +26,7 @@ This pipeline loads Eviction Lab map 2.0 data and performs the following actions
 copy `.env` to `.env.local` and add configuration for AWS CLI, S3 input bucket, and S3 output buckets.
 
 **defaults:**
+
 ```
 AWS_ACCESS_ID=
 AWS_SECRET_KEY=
@@ -80,11 +80,12 @@ Usage: build.sh [-t] [-d] [-r region]
 
 ## Previewing Tilesets
 
-After running a build, there will be a local copy of the data and tilesets (.mbtiles) in the `build` folder.  You can use [tileserver-gl](https://github.com/maptiler/tileserver-gl) to preview the tilesets locally.
+After running a build, there will be a local copy of the data and tilesets (.mbtiles) in the `build` folder. You can use [tileserver-gl](https://github.com/maptiler/tileserver-gl) to preview the tilesets locally.
 
-> Note: `tileserver-gl` only works with node 10.  you will want to install node 10 with `nvm`: `nvm install 10`
+> Note: `tileserver-gl` only works with node 10. you will want to install node 10 with `nvm`: `nvm install 10`
 
 **Example:** preview the census tracts for 2010-2019 tileset locally
+
 ```
 tileserver-gl ./build/tracts-10.mbtiles
 ```
