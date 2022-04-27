@@ -91,3 +91,9 @@ tileserver-gl ./build/tracts-10.mbtiles
 ```
 
 then open http://localhost:8080/ to view the tileset.
+
+# Troubleshooting / Common Errors
+
+> ColumnIdentifierError: Invalid range %s. Ranges must be two integers separated by a - or : character.
+
+If you get this error, it means the columns in the data file do not match the columns in the build script. Likely a missing column. Check the `_proc/$REGION/data.wide.csv` file and ensure it has columns for each of the variables in the preceding `Creating $TYPE tileset...` log message.
