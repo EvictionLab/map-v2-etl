@@ -121,9 +121,9 @@ for REGION in ${REGIONS[@]}; do
     declare -A BUBBLE_OPTS
     BUBBLE_OPTS[states]="--maximum-zoom=6 --base-zoom=1"
     BUBBLE_OPTS[counties]="--maximum-zoom=7 --base-zoom=2"
-    BUBBLE_OPTS[cities]="--maximum-zoom=8 --base-zoom=7 --drop-densest-as-needed --extend-zooms-if-still-dropping"
-    BUBBLE_OPTS[tracts]="--maximum-zoom=10 --base-zoom=8 --drop-densest-as-needed --extend-zooms-if-still-dropping"
-    BUBBLE_OPTS[block-groups]="--maximum-zoom=10 --base-zoom=9 --drop-densest-as-needed --extend-zooms-if-still-dropping"
+    BUBBLE_OPTS[cities]="--maximum-zoom=9 --base-zoom=7 --drop-densest-as-needed --extend-zooms-if-still-dropping"
+    BUBBLE_OPTS[tracts]="--maximum-zoom=10 --base-zoom=9 --drop-densest-as-needed --extend-zooms-if-still-dropping"
+    BUBBLE_OPTS[block-groups]="--maximum-zoom=10 --base-zoom=10 --drop-densest-as-needed --extend-zooms-if-still-dropping"
 
     echo "Generating bubble tileset..."
     tippecanoe -o ./_proc/$REGION/$REGION-centers.mbtiles -f \
@@ -147,7 +147,7 @@ for REGION in ${REGIONS[@]}; do
     declare -A CHOROPLETH_OPTS
     CHOROPLETH_OPTS[states]="--maximum-zoom=6 --simplification=10 --detect-shared-borders"
     CHOROPLETH_OPTS[counties]="--maximum-zoom=7 --minimum-zoom=1 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --detect-shared-borders"
-    CHOROPLETH_OPTS[cities]="--maximum-zoom=8 --minimum-zoom=2 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=10 --detect-shared-borders"
+    CHOROPLETH_OPTS[cities]="--maximum-zoom=9 --minimum-zoom=2 --drop-densest-as-needed --extend-zooms-if-still-dropping --simplification=10"
     CHOROPLETH_OPTS[tracts]="--maximum-zoom=10 --minimum-zoom=7 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=25 --detect-shared-borders"
     CHOROPLETH_OPTS[block-groups]="--maximum-zoom=10 --minimum-zoom=8 --coalesce-smallest-as-needed --extend-zooms-if-still-dropping --simplification=25 --detect-shared-borders"
 

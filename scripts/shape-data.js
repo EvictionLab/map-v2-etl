@@ -41,6 +41,10 @@ const parser = (row) => {
     acc[yearKey] = row[key];
     return acc;
   }, {});
+  // add parent location if it doesnt exits
+  if (!newRow.pl) {
+    newRow["pl"] = "United States";
+  }
   return newRow;
 };
 
